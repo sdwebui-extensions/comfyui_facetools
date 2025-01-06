@@ -54,7 +54,11 @@ class Models:
     @classmethod
     def yolo(cls, img, threshold):
         if '_yolo' not in cls.__dict__:
-            cls._yolo = YOLO(os.path.join(models_dir,'ultralytics','bbox','face_yolov8m.pt'))
+            if os.path.exists('/stable-diffusion-cache/models/yolo'):
+                model_folder = '/stable-diffusion-cache/models/yolo'
+            else:
+                model_folder = os.path.join(models_dir,'ultralytics','bbox')
+            cls._yolo = YOLO(os.path.join(model_folder,'face_yolov8m.pt'))
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             cls._yolo = cls._yolo.to(device)
         dets = cls._yolo(img, conf=threshold)[0]
@@ -62,7 +66,11 @@ class Models:
     @classmethod
     def lmk(cls, crop):
         if '_lmk' not in cls.__dict__:
-            cls._lmk = InferenceSession(os.path.join(models_dir, 'landmarks', 'fan2_68_landmark.onnx'), providers=get_available_providers())
+            if os.path.exists('/stable-diffusion-cache/models/landmarks'):
+                model_folder = '/stable-diffusion-cache/models/landmarks'
+            else:
+                model_folder = os.path.join(models_dir,'landmarks')
+            cls._lmk = InferenceSession(os.path.join(model_folder, 'fan2_68_landmark.onnx'), providers=get_available_providers())
         lmk = cls._lmk.run(None, {'input': crop})[0]
         return lmk
 
@@ -204,7 +212,10 @@ def mask_BiSeNet(crop,
     with torch.no_grad():
         bisenet = BiSeNet(n_classes=19)
         bisenet.cuda()
-        model_path = os.path.join(models_dir, 'bisenet', '79999_iter.pth')
+        if os.path.exists("/stable-diffusion-cache/models/facedetection_models/parsing_bisenet.pth"):
+            model_path = "/stable-diffusion-cache/models/facedetection_models/parsing_bisenet.pth"
+        else:
+            model_path = os.path.join(models_dir, 'bisenet', '79999_iter.pth')
         bisenet.load_state_dict(torch.load(model_path))
         bisenet.eval()
         crop_t = crop.permute(0,3,1,2).cuda().float()
@@ -256,8 +267,12 @@ def mask_jonathandinu(crop, skin=True, nose=True, eye_g=True, l_eye=True, r_eye=
     )
     
     if 'jonathandinu_image_processor' not in globals():
-        jonathandinu_image_processor = SegformerImageProcessor.from_pretrained("jonathandinu/face-parsing")
-        jonathandinu_model = SegformerForSemanticSegmentation.from_pretrained("jonathandinu/face-parsing")
+        if os.path.exists("/stable-diffusion-cache/models/face-parsing"):
+            model_id = "/stable-diffusion-cache/models/face-parsing"
+        else:
+            model_id = os.path.join(models_dir, 'jonathandinu', 'face-parsing')
+        jonathandinu_image_processor = SegformerImageProcessor.from_pretrained(model_id)
+        jonathandinu_model = SegformerForSemanticSegmentation.from_pretrained(model_id)
         jonathandinu_model.to(device)
 
     inputs = jonathandinu_image_processor(images=crop.mul(255).type(torch.uint8), return_tensors="pt").to(device)

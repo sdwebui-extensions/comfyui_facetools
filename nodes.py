@@ -21,7 +21,11 @@ class GenderFaceFilter:
     def run(self, faces, gender):
         filtered = []
         rest = []
-        pipe = pipeline('image-classification', model='dima806/man_woman_face_image_detection', device=0)
+        if os.path.exists('/stable-diffusion-cache/models/man_woman_face_image_detection'):
+            model_id = '/stable-diffusion-cache/models/man_woman_face_image_detection'
+        else:
+            model_id = 'dima806/man_woman_face_image_detection'
+        pipe = pipeline('image-classification', model=model_id, device=0)
         for face in faces:
             _, im = face.crop(224, 1.2)
             im = im.permute(0,3,1,2)[0]
