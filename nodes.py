@@ -1,7 +1,16 @@
 import torch
 from collections import defaultdict
-from .utils import *
-from transformers import pipeline
+import os
+import numpy as np
+import cv2
+
+mask_types = [
+    'simple_square',
+    'convex_hull',
+    'BiSeNet',
+    'jonathandinu',
+    # 'clean BiSeNet',
+]
 
 class GenderFaceFilter:
     @classmethod
@@ -19,6 +28,8 @@ class GenderFaceFilter:
     CATEGORY = 'facetools'
 
     def run(self, faces, gender):
+        from transformers import pipeline
+        import torchvision as tv
         filtered = []
         rest = []
         if os.path.exists('/stable-diffusion-cache/models/man_woman_face_image_detection'):
@@ -88,6 +99,8 @@ class DetectFaces:
     CATEGORY = 'facetools'
 
     def run(self, image, threshold, min_size, max_size, mask=None):
+        from .utils import detect_faces
+        import torchvision as tv
         faces = []
         masked = image
         if mask is not None:
@@ -123,6 +136,7 @@ class CropFaces:
     CATEGORY = 'facetools'
 
     def run(self, faces, crop_size, crop_factor, mask_type):
+        from .utils import mask_crop
         if len(faces) == 0:
             empty_crop = torch.zeros((1,512,512,3))
             empty_mask = torch.zeros((1,512,512))
@@ -254,6 +268,7 @@ class BiSeNetMask:
     def run(self, crop, skin, left_brow, right_brow, left_eye, right_eye, eyeglasses,
             left_ear, right_ear, earring, nose, mouth, upper_lip, lower_lip,
             neck, necklace, cloth, hair, hat):
+        from .utils import mask_BiSeNet
         masks = mask_BiSeNet(crop, skin, left_brow, right_brow, left_eye, right_eye, eyeglasses,
             left_ear, right_ear, earring, nose, mouth, upper_lip, lower_lip,
             neck, necklace, cloth, hair, hat)
@@ -292,6 +307,7 @@ class JonathandinuMask:
     
     def run(self, crop, skin, nose, eyeglasses, left_eye, right_eye, left_brow, right_brow, left_ear, right_ear,
             mouth, upper_lip, lower_lip, hair, hat, earring, necklace, neck, cloth):
+        from .utils import mask_jonathandinu
         masks = mask_jonathandinu(crop, skin, nose, eyeglasses, left_eye, right_eye, left_brow, right_brow, left_ear, right_ear,
                              mouth, upper_lip, lower_lip, hair, hat, earring, necklace, neck, cloth)
         return (masks, )
