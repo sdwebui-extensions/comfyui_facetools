@@ -127,8 +127,9 @@ class Face:
         T3 = np.array([[1, 0, -cx], [0, 1, -cy], [0, 0, 1]])
         T4 = np.array([[1, 0, cx], [0, 1, cy], [0, 0, 1]])
         N = N @ T4 @ S @ T3
-        crop = cv2.warpAffine(self.img.numpy(), N, (size, size))
+        crop = cv2.warpAffine(self.img.numpy(), N, (size, size), flags=cv2.INTER_LANCZOS4)
         crop = torch.from_numpy(crop)[None]
+        crop = torch.clip(crop, 0, 1)
         
         return N, crop
 
@@ -144,9 +145,7 @@ def detect_faces(img, threshold):
         a,b,c,d = [int(x) for x in (cx - r, cy - r, cx + r, cy + r)]        
         face = Face(img, a, b, c, d)
         
-        M = estimate_norm(face.kps, 512)
-        if abs(M[0,0]) > 1 and abs(M[1,1]) > 1:
-            faces.append(face)
+        faces.append(face)
     return faces
 
 def get_face_mesh(crop: torch.Tensor):
